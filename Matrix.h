@@ -15,64 +15,31 @@ private:
 	size_t m_cols;
 
 public:
-	// constructors
 	Matrix(size_t rows = 2, size_t cols = 2);
 	Matrix(size_t rows, size_t cols, T value);
-	Matrix(const Matrix& oth); //copy
-	Matrix(Matrix&& oth); //move
-
-	// static
-	static Matrix createMatrix();
-
-	// destructor
 	~Matrix();
+	Matrix(const Matrix& oth);
+	Matrix(Matrix&& oth); 
+	Matrix operator=(const Matrix&);
+	Matrix& operator=(Matrix&& other) noexcept;
 
-	// getter
-	T GetElement(size_t row, size_t col) const;
-	size_t GetRowsCount() const;
-	size_t GetColsCount() const;
-
-	// setter
-	void FillByRandom();
-	void FillByValue(T value);
-
-	// operator ()
-	T& operator()(size_t row, size_t col);
-	T** operator->();
-	Matrix operator*();
-
-	// transpose matrix
-	Matrix Transpose(bool& success) const;
-
-	// print matrix
-	void Print();
-
-	// operator =
-	Matrix operator=(const Matrix&); // copy 
-	Matrix& operator=(Matrix&& other) noexcept; // move
-
-	// arithmetic operators
 	Matrix operator+(const Matrix&) const; //binary +
 	Matrix operator-(const Matrix&) const; //binary -
 	Matrix operator*(const T mult) const;  //multiply by number
 	Matrix operator*(const Matrix&) const; //multiply by matrix
 
-	// short forms of operators
 	Matrix operator+=(const Matrix&) const;
 	Matrix operator-=(const Matrix&) const;
 	Matrix operator*=(const T mult) const;
 	Matrix operator*=(const Matrix&) const;
 
-	// increment & decrement
 	Matrix operator++(); //prefix
 	Matrix operator++(int); //postfix
 	Matrix operator--(); //prefix
 	Matrix operator--(int); //postfix
 
-	// unary operator -
 	Matrix operator-();
 
-	// bool operators
 	bool operator==(const Matrix&) const;
 	bool operator!=(const Matrix&) const;
 	bool operator<(const Matrix&) const;
@@ -80,27 +47,33 @@ public:
 	bool operator<=(const Matrix&) const;
 	bool operator>=(const Matrix&) const;
 
-	// operator []
-	int* operator[](size_t row) {return m_pdata[row];};
+	T GetElement(size_t row, size_t col) const;
+	size_t GetRowsCount() const;
+	size_t GetColsCount() const;
 
+	void FillByRandom();
+	void FillByValue(T value);
 
-	//friend functions
+	T& operator()(size_t row, size_t col);
+	T** operator->();
+	Matrix operator*();
+	int* operator[](size_t row) { return m_pdata[row]; };
+
+	Matrix Transpose(bool& success) const;
+
+	static Matrix createMatrix();
+
+	void Print();
+
 	friend Matrix operator*(T mult, const Matrix& other);
 	friend std::ostream& operator<<(std::ostream&, const Matrix&);
 };
 
-////////////////////////////////////////////////////////////////////////
-
 template <typename T>
 int Matrix<T>::countObjects = 0;
 
-
-
-
-
-// constructors
 template <typename T>
-Matrix<T>::Matrix(size_t rows, size_t cols)
+inline Matrix<T>::Matrix(size_t rows, size_t cols)
 	: m_pdata(new T* [rows]), m_rows(rows), m_cols(cols)
 {
 	for (int i = 0; i < m_rows; i++)
@@ -111,14 +84,14 @@ Matrix<T>::Matrix(size_t rows, size_t cols)
 }
 
 template <typename T>
-Matrix<T>::Matrix(size_t rows, size_t cols, T value)
+inline Matrix<T>::Matrix(size_t rows, size_t cols, T value)
 	: Matrix(rows, cols)
 {
 	FillByValue(value);
 }
 
 template <typename T>
-Matrix<T>::Matrix(const Matrix& other)
+inline Matrix<T>::Matrix(const Matrix& other)
 	: m_pdata(new int* [other.m_rows]), m_rows(other.m_rows), m_cols(other.m_cols)  //deep copy
 {
 	std::cout << "Copy constructor\n";
@@ -134,7 +107,7 @@ Matrix<T>::Matrix(const Matrix& other)
 }
 
 template <typename T>
-Matrix<T>::Matrix(Matrix&& other)
+inline Matrix<T>::Matrix(Matrix&& other)
 	: m_rows(other.m_rows), m_cols(other.m_cols), m_pdata(other.m_pdata)
 {
 	std::cout << "Move constructor\n";
@@ -143,152 +116,15 @@ Matrix<T>::Matrix(Matrix&& other)
 	other.m_pdata = nullptr;
 }
 
-
-
-
-
-//static
 template <typename T>
-Matrix<T> Matrix<T>::createMatrix()
-{
-	Matrix temp(2, 2, 1);
-	return temp; //RVO
-}
-
-
-
-
-
-// destructor
-template <typename T>
-Matrix<T>::~Matrix()
+inline Matrix<T>::~Matrix()
 {
 	Destroy();
 	countObjects--;
 }
 
-
-
-
-
-//getter
 template <typename T>
-T Matrix<T>::GetElement(size_t row, size_t col) const
-{
-	return m_pdata[row][col];
-}
-
-template <typename T>
-size_t Matrix<T>::GetRowsCount() const
-{
-	return m_rows;
-}
-
-template <typename T>
-size_t Matrix<T>::GetColsCount() const
-{
-	return m_cols;
-}
-
-
-
-
-
-//setter
-template <typename T>
-void Matrix<T>::FillByRandom()
-{
-	srand(static_cast<T>(time(NULL)));
-	size_t size = m_cols * m_rows;
-	for (int i = 0; i < m_rows; ++i)
-	{
-		for (int j = 0; j < m_cols; ++j)
-		{
-			m_pdata[i][j] = rand() % (size - 1) + 1;
-		}
-	}
-}
-
-template <typename T>
-void Matrix<T>::FillByValue(T value)
-{
-	for (int i = 0; i < m_rows; ++i)
-	{
-		for (int j = 0; j < m_cols; ++j)
-		{
-			m_pdata[i][j] = value;
-		}
-	}
-}
-
-
-
-
-
-//operator ()
-template <typename T>
-T& Matrix<T>::operator()(size_t row, size_t col)
-{
-	return m_pdata[row][col];
-}
-
-template <typename T>
-T** Matrix<T>::operator->()
-{
-	return m_pdata;
-}
-
-template <typename T>
-Matrix<T> Matrix<T>::operator*()
-{
-	return *this;
-}
-
-
-
-
-
-// transpose matrix
-template <typename T>
-Matrix<T> Matrix<T>::Transpose(bool& success) const
-{
-	Matrix result(m_cols, m_rows);
-	for (int i = 0; i < result.m_rows; ++i)
-	{
-		for (int j = 0; j < result.m_cols; ++j)
-		{
-			result.m_pdata[i][j] = m_pdata[j][i];
-		}
-	}
-	success = true;
-	return result;
-}
-
-
-
-
-
-// print matrix
-template <typename T>
-void Matrix<T>::Print()
-{
-	for (int i = 0; i < m_rows; ++i)
-	{
-		for (int j = 0; j < m_cols; ++j)
-		{
-			std::cout << m_pdata[i][j] << "       ";
-		}
-		std::cout << '\n';
-	}
-}
-
-
-
-
-
-//Copy operator
-template <typename T>
-Matrix<T> Matrix<T>::operator=(const Matrix& other)
+inline Matrix<T> Matrix<T>::operator=(const Matrix& other)
 {
 	if (this != &other)
 	{
@@ -308,13 +144,8 @@ Matrix<T> Matrix<T>::operator=(const Matrix& other)
 	return *this;
 }
 
-
-
-
-
-//Move operator
 template <typename T>
-Matrix<T>& Matrix<T>::operator=(Matrix&& other) noexcept //move operator  
+inline Matrix<T>& Matrix<T>::operator=(Matrix&& other) noexcept //move operator  
 {
 	if (this != &other)
 	{
@@ -331,13 +162,8 @@ Matrix<T>& Matrix<T>::operator=(Matrix&& other) noexcept //move operator
 	return *this;
 }
 
-
-
-
-
-//arithmetic operators
 template <typename T>
-Matrix<T> Matrix<T>::operator+(const Matrix& other) const
+inline Matrix<T> Matrix<T>::operator+(const Matrix& other) const
 {
 	Matrix result(this->m_rows, this->m_cols);
 
@@ -359,13 +185,13 @@ Matrix<T> Matrix<T>::operator+(const Matrix& other) const
 }
 
 template <typename T>
-Matrix<T> Matrix<T>::operator-(const Matrix& other) const
+inline Matrix<T> Matrix<T>::operator-(const Matrix& other) const
 {
 	return *this + other * (-1);
 }
 
 template <typename T>
-Matrix<T> Matrix<T>::operator*(const T mult) const
+inline Matrix<T> Matrix<T>::operator*(const T mult) const
 {
 	Matrix result(m_rows, m_cols);
 	for (int i = 0; i < m_rows; ++i)
@@ -379,7 +205,7 @@ Matrix<T> Matrix<T>::operator*(const T mult) const
 }
 
 template <typename T>
-Matrix<T> Matrix<T>::operator*(const Matrix& other) const
+inline Matrix<T> Matrix<T>::operator*(const Matrix& other) const
 {
 	Matrix result(m_rows, other.m_cols);
 	if (m_cols != other.m_rows)
@@ -404,42 +230,32 @@ Matrix<T> Matrix<T>::operator*(const Matrix& other) const
 	return result;
 }
 
-
-
-
-
-//short forms of operators
 template <typename T>
-Matrix<T> Matrix<T>::operator+=(const Matrix& other) const
+inline Matrix<T> Matrix<T>::operator+=(const Matrix& other) const
 {
 	return (*this) + other;
 }
 
 template <typename T>
-Matrix<T> Matrix<T>::operator-=(const Matrix& other) const
+inline Matrix<T> Matrix<T>::operator-=(const Matrix& other) const
 {
 	return (*this) - other;
 }
 
 template <typename T>
-Matrix<T> Matrix<T>::operator*=(const T mult) const
+inline Matrix<T> Matrix<T>::operator*=(const T mult) const
 {
 	return (*this) * mult;
 }
 
 template <typename T>
-Matrix<T> Matrix<T>::operator*=(const Matrix& other) const
+inline Matrix<T> Matrix<T>::operator*=(const Matrix& other) const
 {
 	return (*this) * other;
 }
 
-
-
-
-
-// increment & decrement
 template <typename T>
-Matrix<T> Matrix<T>::operator++()
+inline Matrix<T> Matrix<T>::operator++()
 {
 	for (int i = 0; i < m_rows; i++)
 	{
@@ -452,7 +268,7 @@ Matrix<T> Matrix<T>::operator++()
 }
 
 template <typename T>
-Matrix<T> Matrix<T>::operator++(int)
+inline Matrix<T> Matrix<T>::operator++(int)
 {
 	Matrix temp{ *this };
 
@@ -462,7 +278,7 @@ Matrix<T> Matrix<T>::operator++(int)
 }
 
 template <typename T>
-Matrix<T> Matrix<T>::operator--()
+inline Matrix<T> Matrix<T>::operator--()
 {
 	for (int i = 0; i < m_rows; i++)
 	{
@@ -475,7 +291,7 @@ Matrix<T> Matrix<T>::operator--()
 }
 
 template <typename T>
-Matrix<T> Matrix<T>::operator--(int)
+inline Matrix<T> Matrix<T>::operator--(int)
 {
 	Matrix temp{ *this };
 
@@ -484,24 +300,14 @@ Matrix<T> Matrix<T>::operator--(int)
 	return temp;
 }
 
-
-
-
-
-// unary operator -
 template <typename T>
-Matrix<T> Matrix<T>::operator-()
+inline Matrix<T> Matrix<T>::operator-()
 {
 	return (*this) * (-1);
 }
 
-
-
-
-
-// bool operators
 template <typename T>
-bool Matrix<T>::operator==(const Matrix& other) const
+inline bool Matrix<T>::operator==(const Matrix& other) const
 {
 	if (m_rows != other.m_rows || m_cols != other.m_cols)
 	{
@@ -521,40 +327,132 @@ bool Matrix<T>::operator==(const Matrix& other) const
 }
 
 template <typename T>
-bool Matrix<T>::operator!=(const Matrix& other) const
+inline bool Matrix<T>::operator!=(const Matrix& other) const
 {
 	return !((*this) == other);
 }
 
 template <typename T>
-bool Matrix<T>::operator<(const Matrix& other) const
+inline bool Matrix<T>::operator<(const Matrix& other) const
 {
 	return m_pdata[0][0] < other.m_pdata[0][0];
 }
 
 template <typename T>
-bool Matrix<T>::operator>(const Matrix& other) const
+inline bool Matrix<T>::operator>(const Matrix& other) const
 {
 	return other < *this;
 }
 
 template <typename T>
-bool Matrix<T>::operator<=(const Matrix& other) const
+inline bool Matrix<T>::operator<=(const Matrix& other) const
 {
 	return ((*this) < other) || ((*this) == other);
 }
 
 template <typename T>
-bool Matrix<T>::operator>=(const Matrix& other) const
+inline bool Matrix<T>::operator>=(const Matrix& other) const
 {
 	return ((*this) > other) || ((*this) == other);
 }
 
+template <typename T>
+inline Matrix<T> Matrix<T>::createMatrix()
+{
+	Matrix temp(2, 2, 1);
+	return temp; //RVO
+}
 
+template <typename T>
+inline T Matrix<T>::GetElement(size_t row, size_t col) const
+{
+	return m_pdata[row][col];
+}
 
+template <typename T>
+inline size_t Matrix<T>::GetRowsCount() const
+{
+	return m_rows;
+}
 
+template <typename T>
+inline size_t Matrix<T>::GetColsCount() const
+{
+	return m_cols;
+}
 
-// Destroy
+template <typename T>
+inline void Matrix<T>::FillByRandom()
+{
+	srand(static_cast<T>(time(NULL)));
+	size_t size = m_cols * m_rows;
+	for (int i = 0; i < m_rows; ++i)
+	{
+		for (int j = 0; j < m_cols; ++j)
+		{
+			m_pdata[i][j] = rand() % (size - 1) + 1;
+		}
+	}
+}
+
+template <typename T>
+inline void Matrix<T>::FillByValue(T value)
+{
+	for (int i = 0; i < m_rows; ++i)
+	{
+		for (int j = 0; j < m_cols; ++j)
+		{
+			m_pdata[i][j] = value;
+		}
+	}
+}
+
+template <typename T>
+inline T& Matrix<T>::operator()(size_t row, size_t col)
+{
+	return m_pdata[row][col];
+}
+
+template <typename T>
+inline T** Matrix<T>::operator->()
+{
+	return m_pdata;
+}
+
+template <typename T>
+inline Matrix<T> Matrix<T>::operator*()
+{
+	return *this;
+}
+
+template <typename T>
+inline Matrix<T> Matrix<T>::Transpose(bool& success) const
+{
+	Matrix result(m_cols, m_rows);
+	for (int i = 0; i < result.m_rows; ++i)
+	{
+		for (int j = 0; j < result.m_cols; ++j)
+		{
+			result.m_pdata[i][j] = m_pdata[j][i];
+		}
+	}
+	success = true;
+	return result;
+}
+
+template <typename T>
+inline void Matrix<T>::Print()
+{
+	for (int i = 0; i < m_rows; ++i)
+	{
+		for (int j = 0; j < m_cols; ++j)
+		{
+			std::cout << m_pdata[i][j] << "       ";
+		}
+		std::cout << '\n';
+	}
+}
+
 template <typename T>
 void Matrix<T>::Destroy()
 {
@@ -567,11 +465,6 @@ void Matrix<T>::Destroy()
 	m_pdata = nullptr;
 }
 
-
-
-
-
-//friend functions
 template <typename T>
 Matrix<T> operator*(T mult, const Matrix<T>& other)
 {
