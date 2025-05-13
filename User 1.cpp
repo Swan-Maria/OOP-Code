@@ -1,124 +1,130 @@
-#include <iostream>
+#include <iostream> 
 #include <windows.h>
-#include <fstream>
+#include <fstream> 
 #include <string>
-#include <ctime>
 #include <thread>
-#include <atomic>
 
-const std::string filename = "D:\\Visual Studio Repos\\Messager\\x64\\Debug\\chat.txt";
+const std::string chat_file_name = "chat.txt";
+const std::string user_name = "User1";
+const std::string peer_name = "User2";
+std::string pos_file_name = "position"+ user_name +".txt";
+int unread_count = 0;
+bool running(true);
 
-// !!! ПЕРЕД ЗАПУСКОМ каждый пользователь меняет эти строки на своё имя
-const std::string username = "user1";
-const std::string peername = "user2";
-
-std::atomic<bool> running(true);
-
-void read_messages_loop(std::streampos& position)
+void count_unread_messages(std::streampos& position)
 {
-    while (running)
+    std::ifstream chatFile(chat_file_name, std::ios::in);
+    if (chatFile)
     {
-        std::ifstream chatRead(filename, std::ios::in);
-        if (chatRead.is_open())
+        chatFile.seekg(position);
+        std::string line;
+        
+
+        while (std::getline(chatFile, line))
         {
-            chatRead.seekg(position);
-            std::string line;
-            bool updated = false;
-
-            while (std::getline(chatRead, line))
-            {
-                // Разбираем строку: username|time|message
-                size_t delim1 = line.find('|');
-                size_t delim2 = line.find('|', delim1 + 1);
-
-                if (delim1 != std::string::npos && delim2 != std::string::npos)
-                {
-                    std::string author = line.substr(0, delim1);
-                    std::string timestamp = line.substr(delim1 + 1, delim2 - delim1 - 1);
-                    std::string message = line.substr(delim2 + 1);
-
-                    // Показываем любое сообщение (и своё, и чужое)
-                    std::cout << "\n" << author << " [" << timestamp << "]: " << message << "\n> ";
-                    std::cout.flush();
-
-                    updated = true;
-                }
-
-                position = chatRead.tellg();
-            }
-            chatRead.close();
-
-            // Сохраняем позицию только если было новое сообщение
-            if (updated) {
-                std::ofstream savePosFile("position_" + username + ".txt");
-                if (savePosFile.is_open()) {
-                    savePosFile << static_cast<std::streamoff>(position);
-                    savePosFile.close();
-                }
-            }
+            unread_count++;
         }
+        chatFile.close();
 
-        Sleep(200); // Проверяем каждые 200 мс
+        if (unread_count > 0)
+        {
+            std::cout << "\nYou have " << unread_count << " unread messages from " << peer_name << "!\n";
+        }
     }
 }
 
+void reading_messages(std::streampos& position)
+{
+    while (running)
+    {
+        std::ifstream Reading(chat_file_name, std::ios::in);
+        if (Reading)
+        {
+            Reading.seekg(position);
+            std::string line;
+            bool updated = false;
+            while (std::getline(Reading, line))
+            {
+                size_t delim = line.find('|');
+                if (delim != std::string::npos)
+                {
+                    std::string author = line.substr(0, delim);
+                    std::string message = line.substr(delim + 1);
+                    std::cout << "\n" << author << ": " << message;
+					std::cout.flush(); // Обновляем вывод
+                    updated = true;
+                }
+                position = Reading.tellg();
+            }
+            Reading.close();
+            if (updated)
+            {
+                std::ofstream save_position(pos_file_name);
+                if (save_position)
+                {
+                    save_position << static_cast<std::streamoff>(position);
+                    save_position.close();
+                }
+			    std::cout << "\n>> ";
+            }
+        }
+        Sleep(200);
+    }
+}
+
+
 int main()
 {
-    std::cout << "Welcome to the Messager with " << peername << "!\n"
+    std::cout << "Welcome to the Messenger with " << peer_name << "!\n"
         << "Enter /exit to exit the program.\n";
 
+    // Определяем начальную позицию чтения из файла
     std::streampos position = 0;
-    std::ifstream posFile("position_" + username + ".txt");
-    if (posFile.is_open())
+    std::ifstream position_file(pos_file_name);
+    if (position_file.is_open())
     {
-        std::streamoff posValue;
-        posFile >> posValue;
-        position = static_cast<std::streampos>(posValue);
-        posFile.close();
+        std::streamoff position_value;
+        position_file >> position_value;
+        position = static_cast<std::streampos>(position_value);
+        position_file.close();
     }
 
-    // Стартуем поток чтения
-    std::thread readerThread(read_messages_loop, std::ref(position));
+    count_unread_messages(position);
 
-    // Основной цикл для ввода сообщений
+    std::thread readerThread(reading_messages, std::ref(position));
+
+    // Основной цикл для отправки сообщений
     while (true)
     {
-        std::cout << "> ";
+        std::cout << ">> ";
         std::string message;
         std::getline(std::cin, message);
-
         if (message == "/exit")
+        {
             break;
+        }
 
-        std::ofstream chatWrite(filename, std::ios::app);
-        if (!chatWrite.is_open())
+        std::ofstream chatWrite(chat_file_name, std::ios::app);
+        if (!chatWrite)
         {
             std::cerr << "Error opening file for writing\n";
             break;
         }
 
-        time_t sec = time(nullptr);
-        struct tm timeinfo;
-        localtime_s(&timeinfo, &sec);
-
-        char timeStr[26];
-        asctime_s(timeStr, sizeof(timeStr), &timeinfo);
-        timeStr[strcspn(timeStr, "\n")] = '\0';
-
-        chatWrite << username << "|" << timeStr << "|" << message << '\n';
-        chatWrite.flush(); // Принудительно сбрасываем буфер на диск
+        chatWrite << user_name << "|" << message << '\n';
+        chatWrite.flush();
         chatWrite.close();
 
-        // После записи сразу обновляем позицию (на всякий случай)
-        std::ifstream tmp(filename, std::ios::ate);
+        std::ifstream tmp(chat_file_name, std::ios::ate);
         if (tmp.is_open()) {
             position = tmp.tellg();
             tmp.close();
 
-            std::ofstream savePosFile("position_" + username + ".txt");
-            if (savePosFile.is_open()) {
-                savePosFile << static_cast<std::streamoff>(position);
-                savePosFile.close();
+            // Сохраняем новую позицию в отдельный файл
+            std::ofstream save_position(pos_file_name);
+            if (save_position) {
+                save_position << static_cast<std::streamoff>(position);
+                save_position.close();
             }
         }
     }
@@ -126,6 +132,5 @@ int main()
     running = false;
     readerThread.join();
 
-    std::cout << "Exiting chat.\n";
     return 0;
 }
